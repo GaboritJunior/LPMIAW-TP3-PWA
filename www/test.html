@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>Test Web BLE</h1>
+<p>Playbulb</p>
+
+<button class="medium" id="discovery" type="button">Discovery</button>
+
+<button class="medium" id="red" type="button">Red</button>
+
+<button class="medium" id="disconect" type="button">Disconnect</button>
+
+<input type="color" id="color-input">Cliquez pour choisir une couleur</input>
+
+<script type="text/javascript" src="playbulb.js"></script>
+
+<script>
+var playbulbCandle = new PlaybulbCandle();
+
+document.getElementById('discovery').addEventListener('click', event => {
+  playbulbCandle.request()
+  .then(_ => playbulbCandle.connect())
+  .then(_ => { alert('connected to ID: ' + playbulbCandle.device.name); })
+  .catch(error => { console.log(error) });
+});
+
+document.getElementById('red').addEventListener('click', event => {
+  if(playbulbCandle.device != null)
+  {
+    //    let configData = new Uint8Array([0x00, r, g, b]);
+	let configData = new Uint8Array(4);
+	configData[0] = 0;     // always 0
+    configData[1] = 255;   // red
+    configData[2] = 255;     // green
+    configData[3] = 255;     // blue
+	playbulbCandle.writeColor(configData);
+  }
+});
+document.getElementById('color-input').addEventListener('input', event => {
+  if(playbulbCandle.device != null)
+  {
+    const input = document.getElementById('color-input').value;
+    let red = parseInt(input.substr(1, 2), 16);
+    let green = parseInt(input.substr(3, 2), 16);
+    let blue = parseInt(input.substr(5, 2), 16);
+    let configData = new Uint8Array(4);
+	configData[0] = 0;     // always 0
+    configData[1] = red;   // red
+    configData[2] = green;     // green
+    configData[3] = blue;     // blue
+	playbulbCandle.writeColor(configData);
+  }
+});
+
+document.getElementById('disconect').addEventListener('click', event => {
+  if(playbulbCandle.device != null)
+  {
+    playbulbCandle.disconnect();
+  }
+});
+</script>
+</body>
+</html>

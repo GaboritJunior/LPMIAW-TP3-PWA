@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<script type="text/javascript" src="complements.js"></script>
+
+<body>
+    
+        <h1>Test camera</h1>
+        <h2>Methode 1 pour prendre une image.</h2>
+		<h3>SUR UN SMARTPHONE</h3>
+		<p><em>l'application par defaut pour la prise de vue est déclenché</em>, la photo prise est ensuite accessible comme un fichier et peut être mise dans une image.</p>
+		<h3>SUR UN ORDINATEUR</h3>
+		<p>on ne peut que charger une image depuis le systeme de fichier.</p>
+       
+		<input type="file" capture="camera" onchange="loadFile(event)" accept="image/jpeg"/>
+		<p><img id="img_output" width="200" /></p>
+		
+		<p>
+		<button onclick="getMajColor1()">Couleur majoritaire</button>
+		<p id="color_result1"></p>
+		</p>
+		
+		
+		<h2>Methode 2 pour prendre une photo, demarrage d'un flux video caché et snapshot lorsqu'on clique sur le bouton</h2>
+		
+		<p>Remarque : le flux vidéo peut evidemment être rendu visible</p>
+        
+		<video id="video" hidden>Video stream not available.</video>
+		<canvas id='mycanvas'>browser don't support canvas</canvas>
+		
+		<button onclick="clic_clac()">"Cliquez 2x (avant et après autorisation)"</button>
+		
+		<p>
+		<button onclick="getMajColor2()">Couleur majoritaire</button>
+		<p id="color_result2"></p>
+		</p>
+		
+<script>
+
+
+function clic_clac() {
+
+	// il faudrait faire une seule fois les instructions ci-dessous
+	video = document.getElementById('video');
+    canvas = document.getElementById('mycanvas');
+	
+	// cette fonction demande l'autorisation au navigateur
+	// lecture en continue d'une video, l'affichage étant caché dans le HTML
+	// a ne faire qu'une seule fois, sinon création de multiple instance de stream
+	navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+			.then(function(stream) {
+				video.srcObject = stream;
+				video.play();
+			})
+			.catch(function(err) {
+				console.log("An error occurred: " + err);
+			});
+			
+			
+	// l'opération de copie du flux vidéo vers le canvas est fait ici (drawImage)	
+    let context = canvas.getContext('2d');
+	
+	// c'est la seule ligne de code utile pour faire un snapshot.
+    context.drawImage(video, 0, 0, 300, 200);
+	}
+	
+function loadFile(event) {
+	var image = document.getElementById('img_output');
+	image.src = URL.createObjectURL(event.target.files[0]);
+}
+
+function getMajColor1() {
+	var resultat = couleurDominanteImage('img_output', 1);
+	document.getElementById('color_result1').innerHTML = "#"+resultat;
+}
+
+function getMajColor2() {
+	var resultat = couleurDominanteImage2('mycanvas', 1);
+	document.getElementById('color_result2').innerHTML = "#"+resultat;
+}
+</script>
+
+</body>
+</html>

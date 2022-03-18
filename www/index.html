@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Appli ampoule</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8">
+  <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsenui.css">
+  <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsen-css-components.min.css">
+  <link rel="manifest" href="./manifest.json">
+  <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+  <script type="text/javascript" src="playbulb.js"></script>
+  <script src="./app.js"></script>
+
+  <link rel="stylesheet" href="./reinvented-color-wheel.css">
+  <script src="./reinvented-color-wheel.js"></script>
+  <script src="./complements.js"></script>
+  <script src="shake.js"></script>
+</head>
+
+<body>
+
+  <!--------------------------------------------------- HOME PAGE --------------------------------------------------------------------------->
+
+  <ons-tabbar position="top" id="menu">
+    <ons-tab page="ampoule-manuel.html" label="Manuel" icon="fa-palette" active></ons-tab>
+    <ons-tab id="random" page="ampoule-aleatoire.html" label="Aleatoire" icon="fa-random"></ons-tab>
+    <ons-tab page="ampoule-photo.html" label="Photo" icon="fa-camera"></ons-tab>
+    <ons-tab id="user" page="ampoule-utilisateur.html" label="Utilisateur" icon="fa-user"></ons-tab>
+  </ons-tabbar>
+  <ons-dialog id="dialogue">
+    <div style="text-align: center; padding: 10px;">
+      <p>
+        Aucune ampoule n'est connectée !
+      </p>
+
+      <p>
+        <ons-button onclick="discovery()">Se connecter</ons-button>
+      </p>
+    </div>
+  </ons-dialog>
+  <!--------------------------------------------------- PAGE MENU --------------------------------------------------------------------------->
+  <template id="ampoule-manuel.html">
+    <ons-page id="manuel">
+      <ons-card id="manuel-card"
+        style="display:flex; flex-direction: column; justify-content: center; align-items: center; height: 90vh;">
+        <div id="colorizer">
+          <div id="color-input"></div>
+        </div>
+      </ons-card>
+      <script>
+        ons.getScriptPage().onInit = function () {
+          new ReinventedColorWheel({
+            appendTo: document.getElementById('color-input'),
+            onChange: function (color) {
+
+              const manuelCard = document.getElementById('manuel-card');
+
+              if (playbulbCandle.device != null) {
+
+                let configData = new Uint8Array(4);
+                configData[0] = 0;     // always 0
+                configData[1] = color.rgb[0];     // red
+                configData[2] = color.rgb[1];     // green
+                configData[3] = color.rgb[2];     // blue
+                playbulbCandle.writeColor(configData);
+
+              }
+              manuelCard.style.background = 'rgb(' + color.rgb[0] + ', ' + color.rgb[1] + ', ' + color.rgb[2] + ' )';
+            }
+          })
+        };
+      </script>
+    </ons-page>
+  </template>
+  <!--------------------------------------------------- PAGE PRESENTATION et GEOLOCALISATION --------------------------------------------------------------->
+  <template id="ampoule-aleatoire.html">
+    <ons-page id="aleatoire">
+      <ons-card id="aleatoire-card" style="display:flex; justify-content: center; align-items: center; height: 90vh;">
+        <p id="speed" style="font-size: 7vh; text-align: center;">Secouez-moi !!!</p>
+      </ons-card>
+    </ons-page>
+  </template>
+  <!--------------------------------------------------- PAGE DIAPORAMA --------------------------------------------------------------------------->
+  <template id='ampoule-photo.html'>
+    <ons-page id='photo'>
+      <ons-card id="photo-card"
+        style="display:flex; justify-content: center; flex-direction: column; align-items: center; height: 90vh;">
+        <ons-input type="file" capture="camera" onchange="loadFile(event)" accept="image/jpeg"></ons-input>
+        <p><img style="border: 2px solid #000;" id="img_output" width="200" /></p>
+        <ons-button onclick="getMajColor1()">Couleur majoritaire</ons-button>
+      </ons-card>
+    </ons-page>
+  </template>
+  <!--------------------------------------------------- PAGE AVIS --------------------------------------------------------------------------->
+  <template id='ampoule-utilisateur.html'>
+    <ons-page id='utilisateur'>
+      <ons-card id="color" style="display:flex; justify-content: center; align-items: center; height: 90vh;">
+        <p id="level" style="font-size: 5vh; text-align: center;"></p>
+      </ons-card>
+    </ons-page>
+  </template>
+
+  <script>
+    var playbulbCandle = new PlaybulbCandle();
+
+    var showTemplateDialog = function () {
+      var dialog = document.getElementById('dialogue');
+
+      if (dialog) {
+        dialog.show();
+      } else {
+        ons.createElement('dialog.html', { append: true })
+          .then(function (dialog) {
+            dialog.show();
+          });
+      }
+    };
+
+    var hideDialog = function (id) {
+      document
+        .getElementById(id)
+        .hide();
+    };
+
+    function test() {
+      if (playbulbCandle.device == null) {
+        showTemplateDialog();
+      }
+    };
+
+    setInterval(test(), [2000]);
+
+    const manuel = document.getElementById('ampoule-manuel.html');
+
+    manuel.addEventListener("init", function (event) {
+      test();
+    });
+
+    function discovery() {
+      playbulbCandle.request()
+        .then(_ => playbulbCandle.connect())
+        .then(_ => { alert('connected to ID: ' + playbulbCandle.device.name); })
+        .then(_ => hideDialog("dialogue"))
+        .catch(error => { console.log(error) });
+    };
+
+    const user = document.getElementById('user');
+
+    user.addEventListener('click', () => {
+
+      const level = document.getElementById("level");
+      const color = document.getElementById('color');
+
+      navigator.getBattery().then(battery => {
+        function updateAllBatteryInfo() {
+          updateLevelInfo();
+        }
+        updateAllBatteryInfo();
+
+        battery.addEventListener('levelchange', () => {
+          updateLevelInfo();
+        });
+        function updateLevelInfo() {
+          // pour le test sur pc
+          let batterie = 0.5;
+          level.innerHTML = "Niveau de batterie : " + battery.level * 100 + "%"
+          let r = 0;
+          let g = 0;
+          if (battery.level > 0.5) {
+            g = 255;
+            r = 255 - (255 * battery.level);
+          } else if (battery.level <= 0.5) {
+            g = 255 * battery.level;
+            r = 255;
+          }
+
+          if (playbulbCandle.device != null) {
+            let configData = new Uint8Array(4);
+            configData[0] = 0;     // always 0
+            configData[1] = r;     // red
+            configData[2] = g;     // green
+            configData[3] = 0;     // blue
+            playbulbCandle.writeColor(configData);
+          }
+          color.style.background = 'rgb(' + r + ', ' + g + ', 0)';
+        }
+
+      });
+
+    });
+
+    const random = document.getElementById('random');
+
+    random.addEventListener('click', () => {
+
+      const speed = document.getElementById('speed');
+      const aleatoireCard = document.getElementById("aleatoire-card");
+
+      var myShakeEvent = new Shake({
+        threshold: 15, // optional shake strength threshold
+        timeout: 1000 // optional, determines the frequency of event generation
+      });
+
+      // Start listening to device motion
+      myShakeEvent.start();
+
+      // Register a shake event listener on window with your callback
+      window.addEventListener('shake', shakeEventDidOccur, false);
+
+      //function to call when shake occurs
+      function shakeEventDidOccur() {
+
+        r = Math.floor(Math.random() * 255);
+        g = Math.floor(Math.random() * 255);
+        b = Math.floor(Math.random() * 255);
+        speed.innerHTML = "Rouge : " + r + "; Vert : " + g + "; Bleu : " + b;
+
+        if (playbulbCandle.device != null) {
+
+          let configData = new Uint8Array(4);
+          configData[0] = 0;     // always 0
+          configData[1] = r;     // red
+          configData[2] = g;     // green
+          configData[3] = b;     // blue
+          playbulbCandle.writeColor(configData);
+
+        }
+
+        aleatoireCard.style.background = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+
+      }
+
+    });
+
+    function clic_clac() {
+
+      // il faudrait faire une seule fois les instructions ci-dessous
+      video = document.getElementById('video');
+      canvas = document.getElementById('mycanvas');
+
+      // cette fonction demande l'autorisation au navigateur
+      // lecture en continue d'une video, l'affichage étant caché dans le HTML
+      // a ne faire qu'une seule fois, sinon création de multiple instance de stream
+      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        .then(function (stream) {
+          video.srcObject = stream;
+          video.play();
+        })
+        .catch(function (err) {
+          console.log("An error occurred: " + err);
+        });
+
+
+      // l'opération de copie du flux vidéo vers le canvas est fait ici (drawImage)	
+      let context = canvas.getContext('2d');
+
+      // c'est la seule ligne de code utile pour faire un snapshot.
+      context.drawImage(video, 0, 0, 300, 200);
+    }
+
+    function loadFile(event) {
+      var image = document.getElementById('img_output');
+      image.src = URL.createObjectURL(event.target.files[0]);
+    }
+
+    function getMajColor1() {
+      var resultat = couleurDominanteImage('img_output', 1);
+      console.log(resultat);
+      let red = parseInt(resultat.substr(0, 2), 16);
+      let green = parseInt(resultat.substr(2, 2), 16);
+      let blue = parseInt(resultat.substr(4, 2), 16);
+      if (playbulbCandle.device != null) {
+        let configData = new Uint8Array(4);
+        configData[0] = 0;     // always 0
+        configData[1] = red;   // red
+        configData[2] = green;     // green
+        configData[3] = blue;     // blue
+        playbulbCandle.writeColor(configData);
+      }
+      document.getElementById('photo-card').style.background = 'rgb(' + red + ', ' + green + ', ' + blue + ')'
+    }
+  </script>

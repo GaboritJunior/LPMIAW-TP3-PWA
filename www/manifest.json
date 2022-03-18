@@ -1,0 +1,21 @@
+{
+    "short_name": "PLAYBULB",
+    "name": "Ampoule PLAYBULB CANDLE",
+    "description": "App pour le controle d'ampoule",
+    "start_url": "index.html",
+    "display": "fullscreen",
+    "icons": [
+    {
+    "src": "/TP3-Hybride/images/logo192.png",
+    "type": "image/png",
+    "sizes": "192x192"
+    },
+    {
+    "src": "/TP3-Hybride/images/logo512.png",
+    "type": "image/png",
+    "sizes": "512x512"
+    }
+    ],
+    "background_color": "#242424"
+    }
+    
